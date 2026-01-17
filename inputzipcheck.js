@@ -391,5 +391,4 @@ if (require.main === module) {
     console.log(`Error: ${result.error}`);
   }
   console.log('============================\n');
-  console.log('Check errors.txt for detailed logs');
 }

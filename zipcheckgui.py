@@ -228,11 +228,26 @@ class ValidatorThread(QThread):
         self.validator_script = validator_script
         
     def run(self) -> None:
-        """Run the validation process"""
         try:
+            # Setup for hiding console window on Windows
+            if sys.platform == 'win32':
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = subprocess.SW_HIDE
+                creationflags = subprocess.CREATE_NO_WINDOW
+            else:
+                startupinfo = None
+                creationflags = 0
+            
             # Check if Node.js is available
             try:
-                subprocess.run(['node', '--version'], capture_output=True, check=True)
+                subprocess.run(
+                    ['node', '--version'], 
+                    capture_output=True, 
+                    check=True,
+                    startupinfo=startupinfo,
+                    creationflags=creationflags
+                )
             except (subprocess.CalledProcessError, FileNotFoundError):
                 self.log_update.emit("❌ ERROR: Node.js not found!")
                 self.log_update.emit("Please install Node.js from https://nodejs.org/")
@@ -253,7 +268,9 @@ class ValidatorThread(QThread):
                 ['node', self.validator_script, self.zip_path],
                 capture_output=True,
                 text=True,
-                cwd=Path(self.validator_script).parent
+                cwd=Path(self.validator_script).parent,
+                startupinfo=startupinfo,
+                creationflags=creationflags
             )
             
             # Output stdout

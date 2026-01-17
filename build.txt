@@ -1,0 +1,1 @@
+py -m PyInstaller --onefile --windowed --clean --name "ResourcePackValidator" --icon="C:\Users\sawye\OneDrive\Desktop\discord_bots\SMC\RP-ZipCheck\ZipCheck-ico.ico" --add-data "ZipCheck-ico.ico;." --add-data "inputzipcheck.js;." zipcheckgui.py
