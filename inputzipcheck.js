@@ -6,7 +6,7 @@ const path = require("path");
 const ALLOWED_TOP_LEVEL = new Set(["assets", "pack.mcmeta", "animation_skip.json", "pack.png", "sprites.json"]);
 const ALLOWED_EXT = new Set([
   ".png", ".json", ".mcmeta", ".ogg", ".sfk", ".wav", ".txt", ".bbmodel",
-  ".tga", ".jpeg", ".jpg", ".bmp", ".fsh", ".vsh", ".glsl", ".aseprite", ".ase", ".properties", ".mp3", ".ini"
+  ".tga", ".jpeg", ".jpg", ".bmp", ".fsh", ".vsh", ".glsl", ".aseprite", ".ase", ".properties", ".mp3", ".ini", ".ttf"
 ]);
 const MAX_ZIP_SIZE_MB = 200;               // Max ZIP file size in MB
 const MAX_ZIP_SIZE = MAX_ZIP_SIZE_MB * 1024 * 1024;
@@ -16,9 +16,9 @@ const SUSPICIOUS_KEYWORDS = /\b(exec|cmd|eval|system|shell|python|js|load|run|re
 
 // Log to errors.txt
 function logError(message) {
-  const timestamp = new Date().toISOString();
-  const logMessage = `[${timestamp}] ${message}\n`;
-  fs.appendFileSync("errors.txt", logMessage);
+  //const timestamp = new Date().toISOString();
+  //const logMessage = `[${timestamp}] ${message}\n`;
+  //fs.appendFileSync("errors.txt", logMessage);
 }
 
 // Scan JSON recursively for suspicious content
