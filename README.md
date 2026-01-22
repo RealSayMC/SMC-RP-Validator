@@ -48,4 +48,4 @@ Before running the validator, you **must** install:
 
 ---
 
-**Created by SayMC** | [Report Issues](https://github.com/RealSayMC/SMC-RP-Validator/issues)
+**Created by SayMC** | [Report Issues on Discord](https://discord.gg/KwfDra3Pum)
