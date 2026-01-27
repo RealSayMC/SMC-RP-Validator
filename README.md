@@ -1,6 +1,10 @@
 # SMC Resource Pack Validator v1.0.0
 
-A modern, glassmorphism-styled GUI application for validating Minecraft resource pack ZIP files with security checks and structure validation.
+A modern, glassmorphism-styled validator for Minecraft resource pack ZIP files with security checks and structure validation.
+
+> ⚠️ **Temporary Notice:**  
+> The GUI executable is currently unavailable while a bug is being fixed.  
+> Please use the Node.js script below in the meantime.
 
 ## Installation
 
@@ -8,18 +12,21 @@ A modern, glassmorphism-styled GUI application for validating Minecraft resource
 
 Before running the validator, you **must** install:
 
-1. **Node.js** - [Download here](https://nodejs.org/) (LTS version recommended)
+1. **Node.js** - [Download here](https://nodejs.org/) (LTS version recommended)  
 2. **adm-zip package** - After installing Node.js, open Command Prompt or Terminal and run:
 ```bash
-   npm install -g adm-zip
+npm install -g adm-zip
 ```
 
 ### Running the Validator
 
-1. Download `ResourcePackValidator.exe` from this release
-2. Double-click to run
-3. Drag & drop your resource pack ZIP or click "Browse Files"
-4. Click "Validate Pack"
+1. Download or clone this repository  
+2. Open Command Prompt or Terminal in the folder containing `inputzipcheck.js`  
+3. Run the validator using:
+```bash
+node inputzipcheck.js example.zip
+```
+Replace `example.zip` with your resource pack ZIP file.
 
 ## Common Issues
 
@@ -27,22 +34,21 @@ Before running the validator, you **must** install:
 - Solution: Run `npm install -g adm-zip` in your terminal
 - Make sure Node.js is properly installed first
 
-**Validation window closes immediately**
-- Solution: Install both Node.js and adm-zip as listed above
-- Restart your computer after installation
+**Command not recognized: node**
+- Solution: Reinstall Node.js and restart your computer
 
 ## Features
 
-- Modern glassmorphism UI with gradient backgrounds
-- Drag & drop support for easy file selection
-- Comprehensive validation (pack.mcmeta, file structure, security checks)
-- Real-time validation logs
-- Fast and lightweight
+- Fast and lightweight ZIP validation
+- Validates Minecraft resource pack structure
+- Checks for missing or invalid `pack.mcmeta`
+- Detects suspicious or dangerous file types
+- Clear terminal-based validation output
 
 ## What It Checks
 
-- Valid pack.mcmeta file and JSON structure
-- Presence of pack.png icon
+- Valid `pack.mcmeta` file and JSON structure
+- Presence of `pack.png` icon
 - Suspicious or dangerous file types
 - Overall ZIP file integrity
 
