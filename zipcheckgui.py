@@ -268,22 +268,30 @@ class ValidatorThread(QThread):
                 ['node', self.validator_script, self.zip_path],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 cwd=Path(self.validator_script).parent,
                 startupinfo=startupinfo,
                 creationflags=creationflags
             )
             
-            # Output stdout
+            # Output stdout - emit in chunks of 50 lines at once
             if result.stdout:
-                for line in result.stdout.strip().split('\n'):
-                    self.log_update.emit(line)
-            
-            # Output stderr
+                lines = result.stdout.strip().split('\n')
+                chunk_size = 50
+                for i in range(0, len(lines), chunk_size):
+                    chunk = '\n'.join(lines[i:i+chunk_size])
+                    self.log_update.emit(chunk)
+
+            # Output stderr - emit in chunks
             if result.stderr:
                 self.log_update.emit("")
                 self.log_update.emit("⚠️ ERRORS/WARNINGS:")
-                for line in result.stderr.strip().split('\n'):
-                    self.log_update.emit(line)
+                error_lines = result.stderr.strip().split('\n')
+                chunk_size = 50
+                for i in range(0, len(error_lines), chunk_size):
+                    chunk = '\n'.join(error_lines[i:i+chunk_size])
+                    self.log_update.emit(chunk)
             
             # Check result
             if result.returncode == 0:
@@ -294,6 +302,7 @@ class ValidatorThread(QThread):
                 self.log_update.emit("")
                 self.log_update.emit(f"❌ VALIDATION FAILED (Exit code: {result.returncode})")
                 self.finished_signal.emit(False, f"Validation failed with exit code {result.returncode}")
+                
                 
         except Exception as e:
             import traceback
@@ -573,6 +582,7 @@ class ResourcePackValidator(QMainWindow):
             self.status_label.setText("✅ Validation complete!")
         else:
             self.status_label.setText("❌ Validation failed - check log")
+        
 
 
 def main() -> None:
@@ -587,6 +597,7 @@ def main() -> None:
     
     window = ResourcePackValidator()
     window.show()
+    
     
     sys.exit(app.exec())
 
