@@ -42,11 +42,13 @@ To run the validator through Node.js, install:
 
 1. Download or clone this repository  
 2. Open a terminal inside the folder containing `inputzipcheck.js`  
-3. Run:
+3. Run the validator with:
 
     node inputzipcheck.js example.zip
 
 Replace `example.zip` with your resource pack ZIP file.
+
+> You can run **any resource pack ZIP** this way to validate it through the terminal.
 
 ---
 
