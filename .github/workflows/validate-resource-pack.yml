@@ -1,96 +1,103 @@
 name: 🗂️ Validate Resource Pack
 
 on:
-  workflow_dispatch:
-    inputs:
-      zip_url:
-        description: "Direct download URL to your resource pack ZIP"
-        required: true
-        type: string
-      pack_name:
-        description: "Pack name / label (optional, just for display)"
-        required: false
-        default: "My Resource Pack"
-        type: string
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
 
 jobs:
   validate:
-    name: 🔍 Run Validation
     runs-on: ubuntu-latest
 
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
 
-      - name: ⚙️ Set up Node.js
-        uses: actions/setup-node@v4
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: 📦 Install adm-zip
-        run: npm install adm-zip
+      - run: npm install adm-zip
 
-      - name: 🌐 Download the ZIP
+      - name: Extract URL
+        id: url
         run: |
-          echo "⬇️ Downloading pack from URL..."
-          curl -L --fail -o input.zip "${{ inputs.zip_url }}"
-          SIZE=$(du -sh input.zip | cut -f1)
-          echo "✅ Download complete — File size: $SIZE"
-
-      - name: 🔍 Validate the pack
-        id: validate
-        run: |
-          node inputzipcheck.js input.zip 2>&1 | tee validation_output.txt
-          if grep -q "ZIP IS VALID" validation_output.txt; then
-            echo "result=valid" >> $GITHUB_OUTPUT
+          URL=$(echo "${{ github.event.issue.body }}" | grep -oE 'https?://[^ ]+' | head -1)
+          if [ -z "$URL" ]; then
+            echo "found=false" >> $GITHUB_OUTPUT
           else
-            echo "result=invalid" >> $GITHUB_OUTPUT
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "url=$URL" >> $GITHUB_OUTPUT
           fi
 
-      - name: 📋 Write Job Summary
-        if: always()
+      - name: No URL found
+        if: steps.url.outputs.found == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '## ⚠️ No URL Found\n\nPlease paste a direct download link to your ZIP in the issue body.'
+            })
+
+      - name: Download ZIP
+        if: steps.url.outputs.found == 'true'
+        run: curl -L --fail -o input.zip "${{ steps.url.outputs.url }}"
+
+      - name: Run validator
+        if: steps.url.outputs.found == 'true'
+        id: result
         run: |
-          PACK="${{ inputs.pack_name }}"
-
-          echo "# 🗂️ SMC Resource Pack Validator" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Pack:** \`$PACK\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ steps.validate.outputs.result }}" = "valid" ]; then
-            echo "## ✅ Pack is VALID" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "> No issues found. Your resource pack passed all checks and is compatible with SMCConverter." >> $GITHUB_STEP_SUMMARY
+          node inputzipcheck.js input.zip 2>&1 | tee out.txt
+          if grep -q "ZIP IS VALID" out.txt; then
+            echo "valid=true" >> $GITHUB_OUTPUT
           else
-            echo "## ❌ Pack is INVALID" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "> Your resource pack has issues that need to be fixed before it can be used with SMCConverter." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 🛑 Errors Found" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| # | Error |" >> $GITHUB_STEP_SUMMARY
-            echo "|---|-------|" >> $GITHUB_STEP_SUMMARY
-            COUNT=1
-            while IFS= read -r line; do
-              MSG="${line#Error: }"
-              echo "| $COUNT | $MSG |" >> $GITHUB_STEP_SUMMARY
-              COUNT=$((COUNT + 1))
-            done < <(grep "^Error:" validation_output.txt)
+            echo "valid=false" >> $GITHUB_OUTPUT
+            ERRORS=$(grep "^Error:" out.txt | sed 's/^Error: /- ❌ /')
+            echo "errors<<EOF" >> $GITHUB_OUTPUT
+            echo "$ERRORS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "<details><summary>📄 Full validator output</summary>" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          cat validation_output.txt >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "</details>" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "*Need help? Join the [SMC Discord](https://discord.gg/KwfDra3Pum)*" >> $GITHUB_STEP_SUMMARY
+      - name: Post valid comment
+        if: steps.url.outputs.found == 'true' && steps.result.outputs.valid == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '## ✅ Pack is VALID\n\nYour resource pack passed all checks and is compatible with SMCConverter! 🎉\n\n> Need help? Join the [SMC Discord](https://discord.gg/KwfDra3Pum)'
+            })
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            })
 
-      - name: ❌ Fail job if pack is invalid
-        if: steps.validate.outputs.result == 'invalid'
-        run: |
-          echo "Pack validation failed. See the Job Summary tab above for a full list of errors."
-          exit 1
+      - name: Post invalid comment
+        if: steps.url.outputs.found == 'true' && steps.result.outputs.valid == 'false'
+        uses: actions/github-script@v7
+        env:
+          ERRORS: ${{ steps.result.outputs.errors }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## ❌ Pack is INVALID\n\nYour pack has issues that need to be fixed.\n\n### Errors\n\n${process.env.ERRORS}\n\n> Need help? Join the [SMC Discord](https://discord.gg/KwfDra3Pum)`
+            })
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            })
