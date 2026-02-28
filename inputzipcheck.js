@@ -3,10 +3,10 @@ const fs = require("fs");
 const path = require("path");
 
 // VALIDATION RULES
-const ALLOWED_TOP_LEVEL = new Set(["assets", "pack.mcmeta", "animation_skip.json", "pack.png", "sprites.json"]);
+const ALLOWED_TOP_LEVEL = new Set(["assets", "pack.mcmeta", "animation_skip.json", "pack.png", "sprites.json", "contents", "items_ids_cache.yml"]);
 const ALLOWED_EXT = new Set([
   ".png", ".json", ".mcmeta", ".ogg", ".sfk", ".wav", ".txt", ".bbmodel",
-  ".tga", ".jpeg", ".jpg", ".bmp", ".fsh", ".vsh", ".glsl", ".aseprite", ".ase", ".properties", ".mp3", ".ini", ".ttf"
+  ".tga", ".jpeg", ".jpg", ".bmp", ".fsh", ".vsh", ".glsl", ".aseprite", ".ase", ".properties", ".mp3", ".ini", ".ttf", ".yml"
 ]);
 const MAX_ZIP_SIZE_MB = 200;               // Max ZIP file size in MB
 const MAX_ZIP_SIZE = MAX_ZIP_SIZE_MB * 1024 * 1024;
@@ -193,7 +193,7 @@ function validateResourcePack(zipPath) {
       const parts = entryName.split("/");
       const topLevel = parts[0];
       const isRootFile = parts.length === 1 && !entry.isDirectory;
-      if (isRootFile && topLevel !== "pack.mcmeta" && topLevel !== "pack.mcmeta.json" && topLevel !== "sprites.json" && topLevel !== "pack.png" && topLevel !== "animation_skip.json") {
+      if (isRootFile && topLevel !== "pack.mcmeta" && topLevel !== "pack.mcmeta.json" && topLevel !== "sprites.json" && topLevel !== "pack.png" && topLevel !== "animation_skip.json" && topLevel !== "items_ids_cache.yml") {
         errors.push(`Invalid root file: ${topLevel}`);
         continue;
       }
