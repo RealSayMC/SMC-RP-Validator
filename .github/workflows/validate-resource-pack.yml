@@ -1,0 +1,96 @@
+name: 🗂️ Validate Resource Pack
+
+on:
+  workflow_dispatch:
+    inputs:
+      zip_url:
+        description: "Direct download URL to your resource pack ZIP"
+        required: true
+        type: string
+      pack_name:
+        description: "Pack name / label (optional, just for display)"
+        required: false
+        default: "My Resource Pack"
+        type: string
+
+jobs:
+  validate:
+    name: 🔍 Run Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 📦 Install adm-zip
+        run: npm install adm-zip
+
+      - name: 🌐 Download the ZIP
+        run: |
+          echo "⬇️ Downloading pack from URL..."
+          curl -L --fail -o input.zip "${{ inputs.zip_url }}"
+          SIZE=$(du -sh input.zip | cut -f1)
+          echo "✅ Download complete — File size: $SIZE"
+
+      - name: 🔍 Validate the pack
+        id: validate
+        run: |
+          node inputzipcheck.js input.zip 2>&1 | tee validation_output.txt
+          if grep -q "ZIP IS VALID" validation_output.txt; then
+            echo "result=valid" >> $GITHUB_OUTPUT
+          else
+            echo "result=invalid" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📋 Write Job Summary
+        if: always()
+        run: |
+          PACK="${{ inputs.pack_name }}"
+
+          echo "# 🗂️ SMC Resource Pack Validator" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pack:** \`$PACK\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.validate.outputs.result }}" = "valid" ]; then
+            echo "## ✅ Pack is VALID" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> No issues found. Your resource pack passed all checks and is compatible with SMCConverter." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Pack is INVALID" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> Your resource pack has issues that need to be fixed before it can be used with SMCConverter." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🛑 Errors Found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| # | Error |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|-------|" >> $GITHUB_STEP_SUMMARY
+            COUNT=1
+            while IFS= read -r line; do
+              MSG="${line#Error: }"
+              echo "| $COUNT | $MSG |" >> $GITHUB_STEP_SUMMARY
+              COUNT=$((COUNT + 1))
+            done < <(grep "^Error:" validation_output.txt)
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "<details><summary>📄 Full validator output</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat validation_output.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Need help? Join the [SMC Discord](https://discord.gg/KwfDra3Pum)*" >> $GITHUB_STEP_SUMMARY
+
+      - name: ❌ Fail job if pack is invalid
+        if: steps.validate.outputs.result == 'invalid'
+        run: |
+          echo "Pack validation failed. See the Job Summary tab above for a full list of errors."
+          exit 1
