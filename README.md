@@ -8,6 +8,12 @@ This tool includes both:
 - A Node.js script version for terminal usage  
 
 ---
+## Running Via Creating Github Issue
+
+- Open new issue
+- Title whatever you'd like, and put the url to your zip in the description.
+
+---
 
 ## Installation
 
@@ -95,3 +101,4 @@ Run:
 
 Report Issues or Suggestions:  
 https://discord.gg/KwfDra3Pum
+
